@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Splash Screen</title>
+    <script language="javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+  </head>
+  <body>
+
+  <div style="float:left; margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
+    <h2>Enter Your Nickname</h2>
+    <input type="text" name="nick" style="">
+  </div>
+
+  <div class="" style="float:right;border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
+    <h2>Join server</h2>
+    <input type="text" name="join_server" style="float:left; margin-right:100px;"><br>
+  </div>
+
+  <div class="" style="float:left;margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
+    <h2>Create Server</h2>
+    <input type="button" value="Create Server" name="nick" onclick="createServer()" style="font-size: 20px;">
+
+  </div>
+  <br><br>
+  <div class="" id="error_div" style="float:left;margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px; visibility:hidden;">
+    <h2 style="color:red;">You need to enter a nickname before creating a server </h2>
+  </div>
+
+
+  <script type="text/javascript">
+
+  function createServer() {
+
+          var val = $("input[name=nick]").val();
+          val = val.trim();
+          console.log(val);
+          if(val.length == 0) {
+            document.getElementById("error_div").style.visibility = "visible";
+          } else {
+            var r = {
+              nick: $("input[name=nick]").val()
+            }
+            $.ajax({
+              type: 'POST',
+              url: '/createServer',
+              data: r,
+              success: (data) => {
+                  //data is response from server.
+                  document.location.href = data.id;
+                  console.log('success');
+                  console.log(data);
+              }
+            });
+          }
+
+			}
+
+
+
+
+
+  </script>
+
+
+
+
+
+  </body>
+</html>

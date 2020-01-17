@@ -1,0 +1,31 @@
+{
+  "name": "connect4",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "ejs": "~2.6.1",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1",
+    "nodemon": "^2.0.2"
+  },
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgokbulut/connect4_real.git"
+  },
+  "author": "Mert Gokbulut",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mgokbulut/connect4_real/issues"
+  },
+  "homepage": "https://github.com/mgokbulut/connect4_real#readme",
+  "description": ""
+}
