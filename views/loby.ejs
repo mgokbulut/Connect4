@@ -3,8 +3,28 @@
   <head>
     <meta charset="utf-8">
     <title>Loby</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src='/javascripts/clientConnection.js'></script>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/connect4.css">
   </head>
   <body>
-    <h1>Waiting for Loby No: <%= lobyID %></h1>
+    <h1 id="waiting_message">Waiting for Loby No: <%= lobyID %></h1>
+    <h1 id="Turn" style="visibility: hidden;"></h1>
+
+    <div id="grid" style="visibility: hidden;">
+    </div>
+    
+    </table>
+    <br><br>
+    <div id="Splash_Screen" style="visibility: hidden;">
+
+      <input type="button" value="Go to the Splash Screen" onclick="referance()">
+      <script>
+        function referance() {
+          document.location.href = "/splash";
+        }
+      </script>
+    </div>
+    
   </body>
 </html>

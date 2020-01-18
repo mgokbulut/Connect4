@@ -1,5 +1,7 @@
 var express = require('express');
 var router = express.Router();
+const gameLobyController = require('../controllers/gameController.js');
+var WebSocket = require('ws');
 
 /* GET home page. */
 router.get('/', function(req, res) {
@@ -14,6 +16,7 @@ router.get('/splash', function(req, res) {
 const loby = [];
 var games_played;
 var shortest_game;
+var nextSocketId = 0;
 
 router.get('/loby/:id?', function(req, res) {
   //to prevent users to access loby path, we need to check wheter they
@@ -21,7 +24,7 @@ router.get('/loby/:id?', function(req, res) {
   //trouch creating or joining a loby from splash screen
   var lobyID = req.signedCookies['loby'];
   if(typeof lobyID == 'undefined' || lobyID != req.params.id) {
-    res.render('error', {message:"you are not authorized to use this path"})
+    res.render('error', {message:"you are not authorized to use this path"});
   } else {
     res.render('loby', {lobyID:req.params.id});
     res.end("ok");
@@ -43,374 +46,184 @@ router.post('/createServer', function(req, res) {
       }
     });
   }
-
+                                        
   loby.push({
     lobyID:loby_id,
-    playerNames:[nick]
+    playerNames:[nick],
+    clients:[]
   });
-
+  console.log(loby);
   //signs a cookie with loby id
-  res.cookie('loby', loby_id, { maxAge: 300000, httpOnly: true, signed: true });
+  res.cookie('loby', loby_id, { maxAge: 20 * 60000, httpOnly: true, signed: true });
   res.json({id:'/loby/' + loby_id});
 
 });
 
-module.exports = router;
-
-
-
-class connect4{
-
-    constructor(gridX, gridY, connectLimit, NoOfPieces) {
-        /**
-         * gridx and gridy is the dimentions of the connect game
-         * the board (an array) is going to hold the pieces
-         * pieces is used as a queue. In every round, the next piece in the queue will use the turn
-         * the used piece is enqueued to the pieces queue right after it is used.
-         */
-        this.EMPTY = "";
-        this.gameFinished = false;
-        this.gridX = gridX;
-        this.gridY = gridY;
-        this.connectLimit = connectLimit;
-        this.board = new Array(gridX * gridY);
-        this.pieces = new Array(NoOfPieces);
-
-        //assigning pieces to a unique id for each piece (for each player);
-        for (let index = 0; index < NoOfPieces; index++) {
-            //because 0 can be understand as null in some cases therefore
-            //starting the index of the player at 1 secures any problem that may cause.
-            this.pieces[index] = index + 1;
-        }
-        //initilizing each space of the board as Empty space
-        for (let index = 0; index < (gridX * gridY); index++) {
-            this.board[index] = "";
-        }
-        this.table_DOM = this.tableCreate();
-    }
-
-    play(rowNo) {
-
-      if(this.gameFinished == true) {
-        alert("game is finished");
+router.post('/joinServer', function(req, res) {
+  var nick = req.body.nick;
+  var loby_id = req.body.lobyID;
+  var check = true;
+  // tries to join to the loby
+  for (let index = 0; index < loby.length; index++) {
+    const element = loby[index];
+    if(element.lobyID == loby_id){
+      // if the second player has choosen the same nickname, send error message
+      if(loby[index].playerNames[0] == nick){
+        res.render('error', {message:"pick a different nickname"});
+        return;
+      } else {
+        loby[index].playerNames.unshift(nick);
+        res.cookie('loby', loby_id, { maxAge: 20 * 60000, httpOnly: true, signed: true });
+        res.json({id:'/loby/' + loby_id});
         return;
       }
+    } 
+  }
 
-      if(this.isBoardFull() == false) {
-        var turn = this.getTurn();
-        if(this.put(turn, rowNo) == true) {
-          this.tableUpdate();
-          alert("The game has won by " + turn);
-          return;
-        }
-        //UPDATE THE VISUALS
-        this.tableUpdate();
-      } else {
-        this.gameFinished = true;
-        console.log("The game has finished with draw");
-      }
-    }
-    put(piece, rowNo) {
-        /**
-         * Inserts the player piece to the board (this.board)
-         */
-
-        //if the given row number is outside of the range
-        if(rowNo < 0 || rowNo >= this.gridX) {
-            throw "Invalid Column Number, " + rowNo + " is out of the range";
-        }
-
-        //index start at negative
-        let index = parseInt(rowNo) - parseInt(this.gridX);
-
-        //finds the spot that the piece needs to be inserted in
-        do {
-            //jumps to the next row
-            index += parseInt(this.gridX);
-        } while (this.board[index] === this.EMPTY);
-
-        //if the index is rowNo at the end, the row is full
-        //this is due to the fact that the index starts at negative
-        if(index === rowNo){
-            throw "Row is full!";
-        }
-
-        //currently index holds the last occupied spot.
-        index -= this.gridX;
-        //now index hols the next available spot in the row.
-        //Inserting the piece to the board:
-        this.board[index] = piece;
-
-        // Returns if the game has finished or not;
-        return (this.checkEnd(piece, index));
-    }
-
-    checkEnd(piece, index) {
-      // checks if the piece has won the game
-      if(this.checkHorizontal(piece, index) == true) {
-        return true;
-      }
-      if(this.checkVertical(piece, index) == true) {
-        return true;
-      }
-      if(this.checkRightCross(piece, index) == true) {
-        return true;
-      }
-      if(this.checkLeftCross(piece, index) == true) {
-        return true;
-      }
-      return false;
+  res.render('error', {message:"there is no such loby"});
+});
 
 
-    }
-
-    checkRightCross(piece, index) {
-      /**
-       * Checks is the game is completed in Right cross aka '/'
-       * note: this method is not tested yet.
-       */
-      // variables:
-        let currentIndex = index;
-        let currentModulo = currentIndex % this.gridX;
-        //count will have the count on how many same piece in one row
-        let count = 0;
-
-            // -- check horizontal right & up -- //
-        // if the piece is inserted to the first row.
-        // this is done to dodge end of the row check aka (currentModulo != 0)
-        // in the while loop
-        if(currentModulo == 0) {
-          currentIndex -= this.gridX - 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
 
 
-        //while the next row the next element is in the same row
-        //and while the piece is in the same row
-        while(currentIndex >= 0 && currentModulo != 0 && this.board[currentIndex] == piece) {
-          currentIndex -= this.gridX - 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-
-            // -- check horizontal left & down -- //
-        currentIndex = index;
-        currentModulo = currentIndex % this.gridX;
-
-        if(currentModulo == (this.gridX - 1)) {
-          currentIndex += this.gridX - 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-        // while its in the boudry of the array and the piece pattern continious
-        while(currentIndex <= this.board.length - 1 && currentModulo != (this.gridX - 1) && this.board[currentIndex] == piece) {
-          currentIndex += this.gridX - 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-
-        // cont - 1 because the index given is counted twice
-        // once in right and once in left
-        if(count - 1 >= this.connectLimit) {
-          return true;
-        }
-        return false;
-    }
-
-    checkLeftCross(piece, index) {
-      /**
-       * Checks is the game is completed in Right cross aka '/'
-       * note: this method is not tested yet.
-       */
-      // variables:
-        let currentIndex = index;
-        let currentModulo = currentIndex % this.gridX;
-        //count will have the count on how many same piece in one row
-        let count = 0;
-
-            // -- check horizontal right & up -- //
-        // if the piece is inserted to the first row.
-        // this is done to dodge end of the row check aka (currentModulo != 0)
-        // in the while loop
-        if(currentModulo == 0) {
-          currentIndex += this.gridX + 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
+/////////////////////////////
 
 
-        //while the next row the next element is in the same row
-        //and while the piece is in the same row
-        while(currentIndex <= this.board.length - 1 && currentModulo != 0 && this.board[currentIndex] == piece) {
-          currentIndex += this.gridX + 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
 
-            // -- check horizontal left & down -- //
-        currentIndex = index;
-        currentModulo = currentIndex % this.gridX;
+const wss = new WebSocket.Server({
+  port: 3001
+});
 
-        if(currentModulo == (this.gridX - 1)) {
-          currentIndex -= this.gridX + 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-        while(currentIndex >= 0 && currentModulo != (this.gridX - 1) && this.board[currentIndex] == piece) {
-          currentIndex -= this.gridX + 1;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
+// we want to log all errors
+wss.on("error", (error) => {
+console.log("Error has occured on socket:" + error);
+});
 
-        // cont - 1 because the index given is counted twice
-        // once in right and once in left
-        if(count - 1 >= this.connectLimit) {
-          return true;
-        }
-        return false;
-    }
-
-    checkHorizontal(piece, index) {
-      /**
-       * Checks is the game is completed horizontally
-       * note: this method is well tested.
-       */
-      // variables:
-        let currentIndex = index;
-        let currentModulo = currentIndex % this.gridX;
-        //count will have the count on how many same piece in one row
-        let count = 0;
-
-            // -- check horizontal right -- //
-        // if the piece is inserted to the first row.
-        // this is done to dodge end of the row check aka (currentModulo != 0)
-        // in the while loop
-        if(currentModulo == 0) {
-          currentIndex++;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-
-
-        //while the next row the next element is in the same row
-        //and while the piece is in the same row
-        while(currentModulo != 0 && this.board[currentIndex] == piece) {
-          currentIndex++;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-
-            // -- check horizontal left -- //
-        //check horizontal left
-        currentIndex = index;
-        currentModulo = currentIndex % this.gridX;
-
-        if(currentModulo == (this.gridX - 1)) {
-          currentIndex--;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-        while(currentModulo != (this.gridX - 1) && this.board[currentIndex] == piece) {
-          currentIndex--;
-          currentModulo = currentIndex % this.gridX;
-          count++;
-        }
-
-        // cont - 1 because the index given is counted twice
-        // once in right and once in left
-        if(count - 1 >= this.connectLimit) {
-          return true;
-        }
-        return false;
-    }
-
-    checkVertical(piece, index) {
-      /**
-       * Checks is the game is completed horizontally
-       * note: this method is well tested.
-       */
-      // variables:
-        let currentIndex = index;
-        //count will have the count on how many same piece in one row
-        let count = 0;
-
-            // -- check vertical right -- //
-
-
-        //while the next row the next element is in the same row
-        //and while the piece is in the same row
-        while(currentIndex <= this.board.length - 1 && this.board[currentIndex] == piece) {
-          currentIndex += this.gridX;
-          count++;
-        }
-
-            // -- check vartical left -- //
-        currentIndex = index;
-
-        while(currentIndex >= 0 && this.board[currentIndex] == piece) {
-          currentIndex -= this.gridX;
-          count++;
-        }
-
-        // cont - 1 because the index given is counted twice
-        // once in right and once in left
-        if(count - 1 >= this.connectLimit) {
-          return true;
-        }
-        return false;
-    }
-
-    isBoardFull() {
-        //check if the game board has totally filled
-        this.board.forEach(element => {
-            if(element == this.EMPTY) {
-                return true;
-            }
-        });
-        return false;
-    }
-
-    getTurn() {
-        /**
-         * pieces works as a queue
-         * next person in line is at the start of the array
-         * after it is dequeued, it is added to the end of the queue for feature turns
-         */
-        let turn = this.pieces[0];
-        this.pieces = this.pieces.splice(-1,1);
-        this.pieces.push(turn);
-        return turn;
-    }
-    reverseTurn(){
-      //make the funtion to reverse the pieces so when an exception is thrown, we can get back to the old layout2
-    }
-    tableCreate() {
-        //CREATE TABLE IN HTML BODY
-        let index = 0;
-        var body = document.getElementsByTagName('body')[0];
-        var tbl = document.createElement('table');
-        tbl.style.width = '70%';;
-        tbl.setAttribute('border', '1');
-        var tbdy = document.createElement('tbody');
-        for (var i = 0; i < this.gridY; i++) {
-          var tr = document.createElement('tr');
-          for (var j = 0; j < this.gridX; j++) {
-            var td = document.createElement('td');
-            td.appendChild(document.createTextNode(this.board[index]));
-            index++;
-            tr.appendChild(td);
-          }
-          tbdy.appendChild(tr);
-        }
-        tbl.appendChild(tbdy);
-        body.appendChild(tbl)
-        return tbl;
-    }
-
-    tableUpdate() {
-        document.getElementsByTagName('body')[0].removeChild(this.table_DOM);
-        this.table_DOM = this.tableCreate();
-    }
-
+// we use this to make our life easier, read on
+function serializeSocketMessage(type, payload) {
+return JSON.stringify({ type: type, payload: payload });
 }
+
+var connectedPlayerCount = 0;
+
+
+router.get('/playerCount', function(req, res) {
+  res.json({count: connectedPlayerCount});
+});
+
+// this function is called everytime a new client connects
+wss.on("connection", (ws, req) => {
+  ws.send(serializeSocketMessage("handshake", "server says hi"));
+  connectedPlayerCount++;
+
+  console.log("Client connected; Total player count: " + connectedPlayerCount);
+
+  // this function is called every time that particular client sends a message
+  ws.onmessage = (message) => {
+      // Since the websocket protocol only supports string messages,
+      // this boilerplate is here to make our life easier.
+      // The client sends serialized JSON objects with propeties type and payload.
+      // This line parses it
+      var messageObject = JSON.parse(message.data);
+
+      // This is equivalent to saying 
+      // let type = messageObject.type;
+      // let payload = messageObject.payload;
+      let { type, payload } = messageObject;
+
+      // uncomment this line for easier debugging
+      console.log("Server got a message: \n" + "--->type: " + type +"\n--->payload: " + payload )
+      //console.log("Client says: " + type + ":" + payload);
+
+     
+
+      // This is the fun part
+      // Here we define our client-to-server communication
+      // Switch for each type (define these yourself).
+      // maybe playerHasMoved? playerHasChosenUsername?, playerHasStartedGame?
+      switch (type) {
+        case "enterLoby":
+            var lobi = payload.split(':');
+            var nick = lobi[0];
+            lobi = lobi[1];
+            console.log(lobi);
+            for (let index = 0; index < loby.length; index++) {
+              const element = loby[index];
+              if(element.lobyID == lobi) {
+                ws.loby = element;
+                element.clients.push(ws); 
+                console.log("successfully added to lobies clients!!");
+
+                //if two players are connected, initiate the game
+                if(ws.loby.clients.length == 2){
+                  console.log("initiating game");
+
+                  var i = 0;
+                  var symbols = ["red", "yellow"];
+                  ws.loby.clients.forEach(client => {   
+                    client.send(serializeSocketMessage("start", {symbol:symbols[i], opponentName:ws.loby.playerNames[i]}));
+                    i++;
+                  });
+                }
+                return;
+              }
+            }
+            console.log("couldn'd be added to the loby");
+        break;
+
+        case "win":          
+          
+          ws.loby.clients.forEach(client => {
+            //because we do not want to send the content to the client it came from
+            if(ws != client) {
+              client.send(serializeSocketMessage("win", payload));
+            }
+          });
+            
+        break;
+
+        case "draw":          
+          
+          ws.loby.clients.forEach(client => {
+            //because we do not want to send the content to the client it came from
+            if(ws != client) {
+              client.send(serializeSocketMessage("draw", payload));
+            }
+          });
+            
+        break;
+
+        case "update":          
+          
+         
+          ws.loby.clients.forEach(client => {
+            if(ws != client) {
+              client.send(serializeSocketMessage("update", payload));
+            }
+          });
+            
+        break;
+      }
+      
+
+  }
+
+
+  // this function closes whenever a client disconnects
+  // e.g. user refreshes/closes page,
+  ws.onclose = (ev) => {
+      console.log("Client disconnected!");
+      connectedPlayerCount--;
+      ws.loby.clients.forEach(client => {
+        if(ws != client) {
+          client.send(serializeSocketMessage("abord", ""));
+        }
+      });
+      
+  }
+});
+
+
+
+///////////////////////////
+module.exports = router;
