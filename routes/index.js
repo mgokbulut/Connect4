@@ -1,9 +1,9 @@
 var express = require('express');
 var router = express.Router();
-const gameLobyController = require('../controllers/gameController.js');
 var WebSocket = require('ws');
 
 /* GET home page. */
+// when the site opens, this route redirects the user to the splash screen
 router.get('/', function(req, res) {
   res.redirect('/splash');
 });
@@ -14,9 +14,23 @@ router.get('/splash', function(req, res) {
 
 
 const loby = [];
-var games_played;
+var games_played = 0;
 var shortest_game;
 var nextSocketId = 0;
+var connectedPlayerCount = 0;
+
+router.get('/playerCount', function(req, res) {
+  res.json({count: connectedPlayerCount});
+});
+
+router.get('/gamesPlayed', function(req, res) {
+  res.json({count: games_played});
+});
+
+router.get('/shortestGame', function(req, res) {
+  res.json({count: shortest_game});
+});
+
 
 router.get('/loby/:id?', function(req, res) {
   //to prevent users to access loby path, we need to check wheter they
@@ -46,7 +60,7 @@ router.post('/createServer', function(req, res) {
       }
     });
   }
-                                        
+
   loby.push({
     lobyID:loby_id,
     playerNames:[nick],
@@ -77,7 +91,7 @@ router.post('/joinServer', function(req, res) {
         res.json({id:'/loby/' + loby_id});
         return;
       }
-    } 
+    }
   }
 
   res.render('error', {message:"there is no such loby"});
@@ -104,12 +118,6 @@ function serializeSocketMessage(type, payload) {
 return JSON.stringify({ type: type, payload: payload });
 }
 
-var connectedPlayerCount = 0;
-
-
-router.get('/playerCount', function(req, res) {
-  res.json({count: connectedPlayerCount});
-});
 
 // this function is called everytime a new client connects
 wss.on("connection", (ws, req) => {
@@ -126,7 +134,7 @@ wss.on("connection", (ws, req) => {
       // This line parses it
       var messageObject = JSON.parse(message.data);
 
-      // This is equivalent to saying 
+      // This is equivalent to saying
       // let type = messageObject.type;
       // let payload = messageObject.payload;
       let { type, payload } = messageObject;
@@ -135,7 +143,7 @@ wss.on("connection", (ws, req) => {
       console.log("Server got a message: \n" + "--->type: " + type +"\n--->payload: " + payload )
       //console.log("Client says: " + type + ":" + payload);
 
-     
+
 
       // This is the fun part
       // Here we define our client-to-server communication
@@ -151,7 +159,7 @@ wss.on("connection", (ws, req) => {
               const element = loby[index];
               if(element.lobyID == lobi) {
                 ws.loby = element;
-                element.clients.push(ws); 
+                element.clients.push(ws);
                 console.log("successfully added to lobies clients!!");
 
                 //if two players are connected, initiate the game
@@ -160,7 +168,7 @@ wss.on("connection", (ws, req) => {
 
                   var i = 0;
                   var symbols = ["red", "yellow"];
-                  ws.loby.clients.forEach(client => {   
+                  ws.loby.clients.forEach(client => {
                     client.send(serializeSocketMessage("start", {symbol:symbols[i], opponentName:ws.loby.playerNames[i]}));
                     i++;
                   });
@@ -171,40 +179,44 @@ wss.on("connection", (ws, req) => {
             console.log("couldn'd be added to the loby");
         break;
 
-        case "win":          
-          
+        case "win":
+
           ws.loby.clients.forEach(client => {
             //because we do not want to send the content to the client it came from
             if(ws != client) {
-              client.send(serializeSocketMessage("win", payload));
+              client.send(serializeSocketMessage("win", payload.board));
             }
           });
-            
+          if(games_played == 0 || payload.time < shortest_game) {
+            shortest_game = payload.time;
+            console.log(payload.time);
+          }
+          games_played++;
         break;
 
-        case "draw":          
-          
+        case "draw":
+
           ws.loby.clients.forEach(client => {
             //because we do not want to send the content to the client it came from
             if(ws != client) {
               client.send(serializeSocketMessage("draw", payload));
             }
           });
-            
+          games_played++;
         break;
 
-        case "update":          
-          
-         
+        case "update":
+
+
           ws.loby.clients.forEach(client => {
             if(ws != client) {
               client.send(serializeSocketMessage("update", payload));
             }
           });
-            
+
         break;
       }
-      
+
 
   }
 
@@ -219,7 +231,7 @@ wss.on("connection", (ws, req) => {
           client.send(serializeSocketMessage("abord", ""));
         }
       });
-      
+
   }
 });
 

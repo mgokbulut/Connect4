@@ -1,0 +1,80 @@
+body  {
+    background-image: url("/images/bg3.jpg");
+    background-color: #cccccc;
+}
+
+#waiting_message {
+    background-color: black;
+    display: block;
+    margin: auto;
+    padding: 6px;
+    text-align: center;
+    color: white;
+    margin-left: 500px;
+    margin-right: 500px;
+    border: 5px solid rgb(19, 80, 194);
+    border-radius: 10px;
+}
+
+#TurnDiv {
+    visibility: hidden;
+    background-color: black;
+    display: block;
+    margin: auto;
+    padding: 6px;
+    color: white;
+    margin-left: 500px;
+    margin-right: 500px;
+    border: 5px solid rgb(19, 80, 194);
+    border-radius: 10px;
+    text-align: center;
+}
+
+#timer {
+    visibility: hidden;
+    float: middle;
+    background-color: black;
+    width: 250px;
+    height: 40px;
+    border: 5px solid rgb(19, 80, 194);
+    border-radius: 10px;
+    margin-left: 280px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    text-align: center;
+    padding:10px;
+    padding-bottom: 0px;
+
+}
+
+.button {
+    background-color: white; /* Green */
+    border: 2px solid rgb(19, 80, 194);
+    font-weight: bold;
+    color: black; 
+    padding: 16px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    margin: auto;
+    padding: auto;
+    font-size: 16px;
+    -webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration: 0.4s;
+    cursor: pointer;
+  }
+.button:active{
+    background-color: gray;
+}
+.button:hover {
+    background-color: rgb(19, 80, 194);
+    color: white;
+}
+#time::after { 
+    content: " seconds";
+}
+
+#time::before { 
+    content: "Time passed: ";
+}
+

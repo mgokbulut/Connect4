@@ -6,25 +6,46 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src='/javascripts/clientConnection.js'></script>
     <link rel="stylesheet" type="text/css" href="/stylesheets/connect4.css">
+    <link rel="stylesheet" type="text/css" href="/stylesheets/loby.css">
+
   </head>
   <body>
-    <h1 id="waiting_message">Waiting for Loby No: <%= lobyID %></h1>
-    <h1 id="Turn" style="visibility: hidden;"></h1>
+
+    <div id="waiting_message">
+      <h1>Waiting for Loby ID: <%= lobyID %></h1>
+    </div>
+
+    <div id="TurnDiv">
+
+      <h1 id="Turn"></h1>
+
+      <div id="timer">
+        <span id="time"></span>
+      </div>
+
+    </div>
+
+    
+
 
     <div id="grid" style="visibility: hidden;">
     </div>
-    
-    </table>
-    <br><br>
-    <div id="Splash_Screen" style="visibility: hidden;">
 
-      <input type="button" value="Go to the Splash Screen" onclick="referance()">
-      <script>
-        function referance() {
-          document.location.href = "/splash";
-        }
-      </script>
+    <br>
+
+    <div id="Splash_Screen" style="visibility: hidden;">
+      <button class="button" onclick="referance()">Go to the Splash Screen</button>
     </div>
-    
+
+    <script>
+      function referance() {
+        document.location.href = "/splash";
+      }
+
+      window.onbeforeunload = function() {
+          return "Are you sure you want to exit";
+      }
+    </script>
+
   </body>
 </html>

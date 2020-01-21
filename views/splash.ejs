@@ -4,38 +4,83 @@
     <meta charset="utf-8">
     <title>Splash Screen</title>
     <script language="javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/splashScreen.css">
 
   </head>
   <body>
 
-  <div style="float:left; margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
-    <h2>Enter Your Nickname</h2>
-    <input type="text" name="nick" style="">
+  <button onclick="openFullscreen();">Open Fullscreen</button>
+
+  <script type="text/javascript">
+  var elem = document.documentElement;
+  function openFullscreen() {
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { /* Firefox */
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE/Edge */
+      elem.msRequestFullscreen();
+    }
+  }
+  </script>
+
+  <div id="nick">
+    <h2 class="h2s">Enter Your Nickname</h2>
+    <input type="text" name="nick"  placeholder="Your Nickname ..." style="display: inline-block; margin-left: 25px;">
   </div>
 
-  <div class="" style="float:right;border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
-    <h2>Join server</h2>
-    <input type="text" name="join_server" style="float:left; margin-right:100px;"><br>
-    <input type="button" value="join" name="nick" onclick="joinServer()" style="font-size: 20px;">
+  <div id="logo">
+    <svg viewBox="0 0 960 300">
+      <symbol id="s-text">
+        <text text-anchor="middle" x="50%" y="80%">Connect4</text>
+      </symbol>
+    
+      <g class = "g-ants">
+        <use xlink:href="#s-text" class="text-copy"></use>
+        <use xlink:href="#s-text" class="text-copy"></use>
+        <use xlink:href="#s-text" class="text-copy"></use>
+        <use xlink:href="#s-text" class="text-copy"></use>
+        <use xlink:href="#s-text" class="text-copy"></use>
+      </g>
+    </svg>
 
+    <div id="gameStatistics">
+      <h2 class="gSh2" id="Statistics">Statistics</h2>
+      <h2 class="gSh2" id="CurrentlyOnlineUsers"></h2>
+      <h2 class="gSh2" id="gamesPlayed"></h2>
+      <h2 class="gSh2" id="shortestGame"></h2>
+    </div>
+  </div>
+  
+  <div id="join">
+    <h2 class="h2s">Join server</h2>
+    <input type="text" name="join_server" style="display: inline-block; margin-left: 12px;"><br>
+    <button class="button" onclick="joinServer()" style="display: inline-block; ">Join</button>
   </div>
 
-  <div class="" style="float:left;margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px;">
-    <h2>Create Server</h2>
-    <input type="button" value="Create Server" name="nick" onclick="createServer()" style="font-size: 20px;">
-
+  <div id="create">
+    <h2 class="h2s">Create Server</h2 >
+    <button class="button" onclick="createServer()">Create Server</button>
   </div>
+  
+
+
+
   <br><br>
-  <div class="" id="error_div" style="float:left;margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px; visibility:hidden;">
-    <h2 style="color:red;">You need to enter a nickname before creating a server </h2>
+
+
+
+
+
+  <!-- Error div -->
+
+  <div id="error_div" style="">
+    <h2 style="color:red;"></h2>
   </div>
 
-  <div class="" id="error_div_lobyID" style="float:left;margin-left:100px; border:1px solid black; padding:10px; padding-top:0px; border-radius:2px; visibility:hidden;">
-    <h2 style="color:red;">You need to enter a lobyID before joining to a server </h2>
-  </div>
-
-  <br><br><br>
-  <h2 id="CurrentlyOnlineUsers"></h2>
+  
 
   <script type="text/javascript">
 
@@ -46,6 +91,7 @@
         localStorage.setItem("nick", val);
         console.log(val);
         if(val.length == 0) {
+          document.getElementById("error_div").innerHTML = "You need to enter a nickname before creating a server";
           document.getElementById("error_div").style.visibility = "visible";
         } else {
           var r = {
@@ -76,9 +122,11 @@
       val = val.trim();
       console.log(val);
       if(val.length == 0) {
+        document.getElementById("error_div").innerHTML = "You need to enter a nickname before joining to a server"
         document.getElementById("error_div").style.visibility = "visible";
       } else if(lobyID.length == 0) {
-        document.getElementById("error_div_lobyID").style.visibility = "visible";
+        document.getElementById("error_div").innerHTML = "You need to enter a lobyID before joining to a server"
+        document.getElementById("error_div").style.visibility = "visible";
       }else {
         var r = {
           nick: val,
@@ -99,21 +147,32 @@
 
     }
 
-    function updateUserCount() {
+    function UpdateStats() {
       //CurrentlyOnlineUsers
       $.getJSON("playerCount").done(function(playerCount) {
-        document.getElementById('CurrentlyOnlineUsers').innerHTML = "Currently "+ playerCount.count + " players available";
+        document.getElementById('CurrentlyOnlineUsers').innerHTML = playerCount.count + " players available";
+      });
+
+      $.getJSON("shortestGame").done(function(playerCount) {
+        if(playerCount.count == undefined){
+          document.getElementById('shortestGame').innerHTML = "no games played";
+        } else {
+          document.getElementById('shortestGame').innerHTML = "shortest game: "+ playerCount.count + " seconds";
+        }
+      });
+
+      $.getJSON("gamesPlayed").done(function(playerCount) {
+        document.getElementById('gamesPlayed').innerHTML =  playerCount.count + " games played";
       });
     }
-    
-    $(document).ready(function() {
-      updateUserCount();
-      //updates the current online players
-      window.setInterval(updateUserCount, 5000);
-      
-    
-    }); 
 
+    $(document).ready(function() {
+      UpdateStats();
+      //updates the current online players
+      window.setInterval(UpdateStats, 5000);
+
+
+    });
 
   </script>
 

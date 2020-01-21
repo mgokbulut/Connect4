@@ -1,8 +1,11 @@
 var server;
 let lobyID;
 let game;
+var sound;
 
 $( document ).ready(function() {
+
+    sound = new sound("/sounds/sound.m4a");
     lobyID = window.location.href;
     var i = lobyID.length
 
@@ -14,7 +17,7 @@ $( document ).ready(function() {
     var link = 'ws://localhost:3001';
     server = new WebSocket(link);
     // we know what this does already
-    
+
     server.onerror = (error) => {
         console.log("An error has occured: " + error)
     }
@@ -39,7 +42,7 @@ $( document ).ready(function() {
 
             // Again, here we define our own action types but this time
             // for server-to-client communication
-            
+
             console.log('server says: ' + payload);
 
 
@@ -56,7 +59,7 @@ $( document ).ready(function() {
                         document.getElementById("Turn").innerHTML =  payload.opponentName + "'s Turn";
                     }
 
-                    document.getElementById("Turn").style.visibility = "visible";
+                    document.getElementById("TurnDiv").style.visibility = "visible";
 
                 break;
 
@@ -65,7 +68,7 @@ $( document ).ready(function() {
                     game.yourTurn = true;
                     document.getElementById("Turn").innerHTML = "Your Turn";
                     game.updateBoard(payload);
-                    
+
                 break;
 
                 case "win":
@@ -74,6 +77,7 @@ $( document ).ready(function() {
                     document.getElementById("Turn").innerHTML = "Game Has been won by " + game.opponentName;
                     game.updateBoard(payload);
                     document.getElementById("Splash_Screen").style.visibility = "visible";
+                    document.getElementById("timer").style.visibility = "hidden";
 
                 break;
 
@@ -83,6 +87,7 @@ $( document ).ready(function() {
                     document.getElementById("Turn").innerHTML = "Game has ended with draw";
                     game.updateBoard(payload);
                     document.getElementById("Splash_Screen").style.visibility = "visible";
+                    document.getElementById("timer").style.visibility = "hidden";
 
                 break;
 
@@ -91,6 +96,7 @@ $( document ).ready(function() {
                     game.gameFinished = true;
                     document.getElementById("Turn").innerHTML = game.opponentName +" has left the game";
                     document.getElementById("Splash_Screen").style.visibility = "visible";
+                    document.getElementById("timer").style.visibility = "hidden";
 
                 break;
             }
@@ -107,7 +113,7 @@ $( document ).ready(function() {
     }
 
 
-    
+
 });
 
 
@@ -115,17 +121,25 @@ function serializeSocketMessage(type, payload) {
     return JSON.stringify({ type: type, payload: payload });
 }
 
-function re(){
-    server.send(serializeSocketMessage("move", "deneme"));
-}
-
-  
-  
-  
-
 
 ////////////////////////////////////////////////////////////////
 
+function sound(src) {
+  this.sound = document.createElement("audio");
+  this.sound.src = src;
+  this.sound.setAttribute("preload", "auto");
+  this.sound.setAttribute("controls", "none");
+  this.sound.style.display = "none";
+  document.body.appendChild(this.sound);
+  this.play = function(){
+    this.sound.play();
+  }
+  this.stop = function(){
+    this.sound.pause();
+  }
+}
+
+////////////////////////////////////////////////////////////////
 
 
 
@@ -141,6 +155,7 @@ class connect4{
     yourTurn;
     symbol;
     opponentName;
+    timer;
 
     constructor(symbol, opponentName) {
       /**
@@ -158,6 +173,8 @@ class connect4{
       this.pieces = new Array(2);
       this.symbol = symbol;
       this.opponentName = opponentName;
+      this.timer = 0;
+
       if(symbol == "red") {
         this.yourTurn = true;
       } else {
@@ -168,30 +185,51 @@ class connect4{
       for (let index = 0; index < (6 * 7); index++) {
           this.board[index] = "";
       }
+
       this.table_DOM = this.tableCreate();
+      document.getElementById("timer").style.visibility = "visible";
+      this.countUp();
     }
-  
+
+    countUp() {
+      //timer
+      var display = document.querySelector('#time');
+      display.textContent = this.timer;
+      this.timer++;
+      var timer_ = setTimeout('game.countUp(' + this.timer + ')', 1000);
+      this.check();
+    }
+
+    check() {
+      //checks if the time left is less than zero
+      if (this.timeLeft < 0) {
+        var display = document.querySelector('#time');
+        display.textContent = "The End";
+
+        document.getElementById("quitbutton").click();
+      }
+    }
+
     play(rowNo) {
         if(this.yourTurn == true) {
             if(this.gameFinished == true) {
                 alert("game is finished");
                 return;
             }
-            
+
             if(this.isBoardFull() == false) {
                 var res = this.put(rowNo);
                 if(res == true) {
                     //alert("The game has won by " + this.symbol);
-                    server.send(serializeSocketMessage("win", game.getBoard()));
+                    server.send(serializeSocketMessage("win", {board:game.getBoard() , time:game.timer}));
                     game.gameFinished = true;
                     game.yourTurn = false;
                     game.tableUpdate();
-                    
+                    sound.play();
 
-                    document.getElementById("Turn").innerHTML = "Game Has been won by " + localStorage.nick;
+                    document.getElementById("Turn").innerHTML = "Game Has been won by You";
                     document.getElementById("Splash_Screen").style.visibility = "visible";
-
-
+                    document.getElementById("timer").style.visibility = "hidden";
 
                     return;
                 } else if(res == false) {
@@ -200,6 +238,7 @@ class connect4{
                     document.getElementById("Turn").innerHTML =  game.opponentName + "'s Turn";
                     this.yourTurn = false;
                     game.tableUpdate();
+                    sound.play();
                 } else {
                     console.log("column is full");
                 }
@@ -209,7 +248,8 @@ class connect4{
                 game.yourTurn = false;
                 console.log("The game has finished with draw");
                 //alert("The game has finished with draw");
-
+                sound.play();
+                document.getElementById("timer").style.visibility = "hidden";
                 document.getElementById("Turn").innerHTML = "Game Has finished with draw";
                 document.getElementById("Splash_Screen").style.visibility = "visible";
             }
@@ -219,40 +259,40 @@ class connect4{
       /**
        * Inserts the player piece to the board (this.board)
        */
-    
+
       var piece = this.symbol;
       //if the given row number is outside of the range
       if(rowNo < 0 || rowNo >= this.gridX) {
           throw "Invalid Column Number, " + rowNo + " is out of the range";
       }
-  
+
       //index start at negative
       let index = parseInt(rowNo) - parseInt(this.gridX);
-  
+
       //finds the spot that the piece needs to be inserted in
       do {
           //jumps to the next row
           index += parseInt(this.gridX);
       } while (this.board[index] === this.EMPTY);
-  
+
       //if the index is rowNo at the end, the row is full
       //this is due to the fact that the index starts at negative
       if(index === rowNo){
           throw "Row is full!";
       }
-  
+
       //currently index holds the last occupied spot.
       index -= this.gridX;
       //now index hols the next available spot in the row.
       //Inserting the piece to the board:
       this.board[index] = piece;
-  
+
       server.send(serializeSocketMessage("update", this.getBoard()));
 
       // Returns if the game has finished or not;
       return (this.checkEnd(piece, index));
     }
-  
+
     checkEnd(piece, index) {
       // checks if the piece has won the game
       if(this.checkHorizontal(piece, index) == true) {
@@ -269,7 +309,7 @@ class connect4{
       }
       return false;
     }
-  
+
     checkRightCross(piece, index) {
     /**
      * Checks is the game is completed in Right cross aka '/'
@@ -280,7 +320,7 @@ class connect4{
       let currentModulo = currentIndex % this.gridX;
       //count will have the count on how many same piece in one row
       let count = 0;
-  
+
           // -- check horizontal right & up -- //
       // if the piece is inserted to the first row.
       // this is done to dodge end of the row check aka (currentModulo != 0)
@@ -290,8 +330,8 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
-  
+
+
       //while the next row the next element is in the same row
       //and while the piece is in the same row
       while(currentIndex >= 0 && currentModulo != 0 && this.board[currentIndex] == piece) {
@@ -299,11 +339,11 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
           // -- check horizontal left & down -- //
       currentIndex = index;
       currentModulo = currentIndex % this.gridX;
-  
+
       if(currentModulo == (this.gridX - 1)) {
         currentIndex += this.gridX - 1;
         currentModulo = currentIndex % this.gridX;
@@ -315,7 +355,7 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
       // cont - 1 because the index given is counted twice
       // once in right and once in left
       if(count - 1 >= this.connectLimit) {
@@ -323,7 +363,7 @@ class connect4{
       }
       return false;
     }
-  
+
     checkLeftCross(piece, index) {
     /**
      * Checks is the game is completed in Right cross aka '/'
@@ -334,7 +374,7 @@ class connect4{
       let currentModulo = currentIndex % this.gridX;
       //count will have the count on how many same piece in one row
       let count = 0;
-  
+
           // -- check horizontal right & up -- //
       // if the piece is inserted to the first row.
       // this is done to dodge end of the row check aka (currentModulo != 0)
@@ -344,8 +384,8 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
-  
+
+
       //while the next row the next element is in the same row
       //and while the piece is in the same row
       while(currentIndex <= this.board.length - 1 && currentModulo != 0 && this.board[currentIndex] == piece) {
@@ -353,11 +393,11 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
           // -- check horizontal left & down -- //
       currentIndex = index;
       currentModulo = currentIndex % this.gridX;
-  
+
       if(currentModulo == (this.gridX - 1)) {
         currentIndex -= this.gridX + 1;
         currentModulo = currentIndex % this.gridX;
@@ -368,7 +408,7 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
       // cont - 1 because the index given is counted twice
       // once in right and once in left
       if(count - 1 >= this.connectLimit) {
@@ -376,7 +416,7 @@ class connect4{
       }
       return false;
     }
-  
+
     checkHorizontal(piece, index) {
     /**
      * Checks is the game is completed horizontally
@@ -387,7 +427,7 @@ class connect4{
       let currentModulo = currentIndex % this.gridX;
       //count will have the count on how many same piece in one row
       let count = 0;
-  
+
           // -- check horizontal right -- //
       // if the piece is inserted to the first row.
       // this is done to dodge end of the row check aka (currentModulo != 0)
@@ -397,8 +437,8 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
-  
+
+
       //while the next row the next element is in the same row
       //and while the piece is in the same row
       while(currentModulo != 0 && this.board[currentIndex] == piece) {
@@ -406,12 +446,12 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
           // -- check horizontal left -- //
       //check horizontal left
       currentIndex = index;
       currentModulo = currentIndex % this.gridX;
-  
+
       if(currentModulo == (this.gridX - 1)) {
         currentIndex--;
         currentModulo = currentIndex % this.gridX;
@@ -422,7 +462,7 @@ class connect4{
         currentModulo = currentIndex % this.gridX;
         count++;
       }
-  
+
       // cont - 1 because the index given is counted twice
       // once in right and once in left
       if(count - 1 >= this.connectLimit) {
@@ -430,7 +470,7 @@ class connect4{
       }
       return false;
     }
-  
+
     checkVertical(piece, index) {
     /**
      * Checks is the game is completed horizontally
@@ -440,25 +480,25 @@ class connect4{
       let currentIndex = index;
       //count will have the count on how many same piece in one row
       let count = 0;
-  
+
           // -- check vertical right -- //
-  
-  
+
+
       //while the next row the next element is in the same row
       //and while the piece is in the same row
       while(currentIndex <= this.board.length - 1 && this.board[currentIndex] == piece) {
         currentIndex += this.gridX;
         count++;
       }
-  
+
           // -- check vartical left -- //
       currentIndex = index;
-  
+
       while(currentIndex >= 0 && this.board[currentIndex] == piece) {
         currentIndex -= this.gridX;
         count++;
       }
-  
+
       // cont - 1 because the index given is counted twice
       // once in right and once in left
       if(count - 1 >= this.connectLimit) {
@@ -466,7 +506,7 @@ class connect4{
       }
       return false;
     }
-  
+
     isBoardFull() {
       //check if the game board has totally filled
       this.board.forEach(element => {
@@ -476,7 +516,7 @@ class connect4{
       });
       return false;
     }
-  
+
     tableCreate() {
     $( "#grid" ).empty();
       //CREATE TABLE IN HTML BODY
@@ -484,7 +524,7 @@ class connect4{
       var grid = document.getElementById('grid');
       grid.style.visibility = 'visible';
       for (var i = 0; i < this.gridY; i++) {
-        $('#grid').append('<div id="row'+ i + '" class="row"></div>');    
+        $('#grid').append('<div id="row'+ i + '" class="row"></div>');
         for (var j = 0; j < this.gridX; j++) {
             if(this.board[index] == "red") {
                 $('#row'+ i).append('<div class="cell" id="cell'+ index + '" onclick="game.play(' + j + ')" style="background-color:red;"></div>');
@@ -500,7 +540,7 @@ class connect4{
       return grid;
     }
     asd(){
-        
+
       //CREATE TABLE IN HTML BODY
       let index = 0;
       var div = document.getElementById('game_table');
@@ -522,7 +562,7 @@ class connect4{
       div.appendChild(tbl)
       return tbl;
     }
-  
+
     tableUpdate() {
       this.table_DOM = this.tableCreate();
     }
@@ -534,4 +574,3 @@ class connect4{
         this.tableUpdate();
     }
   }
-  
