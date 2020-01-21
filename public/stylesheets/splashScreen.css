@@ -140,7 +140,10 @@ input[type=text] {
   color: white;
 }
 
-
+#fullscreen {
+  float:right;
+  
+}
 
 
 

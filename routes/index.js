@@ -13,7 +13,7 @@ router.get('/splash', function(req, res) {
 });
 
 
-const loby = [];
+var loby = [];
 var games_played = 0;
 var shortest_game;
 var nextSocketId = 0;
@@ -40,8 +40,23 @@ router.get('/loby/:id?', function(req, res) {
   if(typeof lobyID == 'undefined' || lobyID != req.params.id) {
     res.render('error', {message:"you are not authorized to use this path"});
   } else {
-    res.render('loby', {lobyID:req.params.id});
-    res.end("ok");
+    var found = false;
+    console.log(loby);
+    
+    loby.forEach((el) => {
+      if(el.lobyID == lobyID){
+        found = true;
+      }
+    });
+
+    if(found) {
+      res.cookie('loby', "", { maxAge: Date.now(), httpOnly: true, signed: true });
+      res.render('loby', {lobyID:req.params.id});
+      res.end("ok");
+    } else {
+      res.render('error', {message:"no such server exists"});
+    }
+    
   }
 
 });
@@ -224,13 +239,17 @@ wss.on("connection", (ws, req) => {
   // this function closes whenever a client disconnects
   // e.g. user refreshes/closes page,
   ws.onclose = (ev) => {
-      console.log("Client disconnected!");
-      connectedPlayerCount--;
       ws.loby.clients.forEach(client => {
         if(ws != client) {
           client.send(serializeSocketMessage("abord", ""));
         }
       });
+      loby = loby.filter(function( obj ) {
+        return obj.lobyID !== ws.loby.lobyID;
+      });
+
+      connectedPlayerCount--;
+      console.log("Client disconnected!");
 
   }
 });

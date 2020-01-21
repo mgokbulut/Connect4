@@ -10,7 +10,8 @@
 
   </head>
   <body>
-
+    <button class="button" id="fullscreen" onclick="openFullscreen();">Fullscreen</button>
+  
     <div id="waiting_message">
       <h1>Waiting for Loby ID: <%= lobyID %></h1>
     </div>
@@ -45,6 +46,22 @@
       window.onbeforeunload = function() {
           return "Are you sure you want to exit";
       }
+
+
+    var elem = document.documentElement;
+    
+    function openFullscreen() {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.mozRequestFullScreen) { /* Firefox */
+        elem.mozRequestFullScreen();
+      } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { /* IE/Edge */
+        elem.msRequestFullscreen();
+      }
+    }
+
     </script>
 
   </body>
