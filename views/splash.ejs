@@ -8,7 +8,6 @@
 
   </head>
   <body>
-
   <div id="nick">
     <h2 class="h2s">Enter Your Nickname</h2>
     <input type="text" name="nick"  placeholder="Your Nickname ..." style="display: inline-block; margin-left: 25px;">
@@ -19,7 +18,7 @@
       <symbol id="s-text">
         <text text-anchor="middle" x="50%" y="80%">Connect4</text>
       </symbol>
-    
+
       <g class = "g-ants">
         <use xlink:href="#s-text" class="text-copy"></use>
         <use xlink:href="#s-text" class="text-copy"></use>
@@ -31,12 +30,13 @@
 
     <div id="gameStatistics">
       <h2 class="gSh2" id="Statistics">Statistics</h2>
+      <h2 class="" id="" style="color:white"><%= message %></h2>
       <h2 class="gSh2" id="CurrentlyOnlineUsers"></h2>
       <h2 class="gSh2" id="gamesPlayed"></h2>
       <h2 class="gSh2" id="shortestGame"></h2>
     </div>
   </div>
-  
+
   <div id="join">
     <h2 class="h2s">Join server</h2>
     <input type="text" name="join_server" style="display: inline-block; margin-left: 12px;"><br>
@@ -47,7 +47,7 @@
     <h2 class="h2s">Create Server</h2 >
     <button class="button" onclick="createServer()">Create Server</button>
   </div>
-  
+
 
 
 
@@ -80,7 +80,7 @@
   }
   </script>
 
-  
+
 
   <script type="text/javascript">
 
@@ -173,6 +173,26 @@
 
 
     });
+
+
+    // If the viewport is less than, or equal to, 700 pixels wide, the background color will be yellow. If it is greater than 700, it will change to pink.
+    function resolution(x) {
+      if (x.matches) { // If media query matches
+        document.getElementById('join').style.visibility = 'hidden';
+        document.getElementById('create').style.visibility = 'hidden';
+        document.getElementById('nick').style.visibility = 'hidden';
+        window.alert("if there is no button to enter the game, you need to resize your window");
+      }
+      else {
+        document.getElementById('join').style.visibility = 'visible';
+        document.getElementById('create').style.visibility = 'visible';
+        document.getElementById('nick').style.visibility = 'visible';
+      }
+    }
+
+    var x = window.matchMedia("(max-width: 1800px)")
+    resolution(x) // Call listener function at run time
+    x.addListener(resolution) // Attach listener function on state changes
 
   </script>
 

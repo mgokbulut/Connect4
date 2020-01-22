@@ -9,9 +9,25 @@ router.get('/', function(req, res) {
 });
 
 router.get('/splash', function(req, res) {
-  res.render('splash');
-});
+  //var message = countSession(req,res);
 
+  var session = req.session;
+  var message;
+
+
+  if (session.views) {
+    session.views++;
+    message = ("You have been here " + session.views + " times (last visit: " + session.lastVisit + ").");
+    session.lastVisit = new Date().toLocaleDateString();
+  } else {
+    session.views = 1;
+    session.lastVisit = new Date().toLocaleDateString();
+    message = ("This is your first visit!");
+  }
+
+  res.render('splash', {message:message});
+  
+});
 
 var loby = [];
 var games_played = 0;
@@ -42,7 +58,7 @@ router.get('/loby/:id?', function(req, res) {
   } else {
     var found = false;
     console.log(loby);
-    
+
     loby.forEach((el) => {
       if(el.lobyID == lobyID){
         found = true;
@@ -56,7 +72,7 @@ router.get('/loby/:id?', function(req, res) {
     } else {
       res.render('error', {message:"no such server exists"});
     }
-    
+
   }
 
 });

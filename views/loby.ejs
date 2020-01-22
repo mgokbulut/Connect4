@@ -11,7 +11,7 @@
   </head>
   <body>
     <button class="button" id="fullscreen" onclick="openFullscreen();">Fullscreen</button>
-  
+
     <div id="waiting_message">
       <h1>Waiting for Loby ID: <%= lobyID %></h1>
     </div>
@@ -26,7 +26,7 @@
 
     </div>
 
-    
+
 
 
     <div id="grid" style="visibility: hidden;">
@@ -49,7 +49,7 @@
 
 
     var elem = document.documentElement;
-    
+
     function openFullscreen() {
       if (elem.requestFullscreen) {
         elem.requestFullscreen();
@@ -61,6 +61,27 @@
         elem.msRequestFullscreen();
       }
     }
+
+
+    // If the viewport is less than, or equal to, 700 pixels wide, the background color will be yellow. If it is greater than 700, it will change to pink.
+    function resolution(x) {
+      if (x.matches) { // If media query matches
+        document.getElementById('grid').style.visibility = 'hidden';
+        window.alert("if there is no button to enter the game, you need to resize your window");
+      }
+      else {
+        if(game == undefined) {
+
+        }else {
+          document.getElementById('grid').style.visibility = 'visible';
+        }
+      }
+    }
+
+    var x = window.matchMedia("(max-width: 1800px)")
+    resolution(x) // Call listener function at run time
+    x.addListener(resolution) // Attach listener function on state changes
+
 
     </script>
 
