@@ -28,6 +28,7 @@ body  {
     border: 5px solid rgb(19, 80, 194);
     border-radius: 10px;
     text-align: center;
+    position: relative;
 }
 
 #timer {
@@ -44,6 +45,7 @@ body  {
     text-align: center;
     padding:10px;
     padding-bottom: 0px;
+    position: static;
 
 }
 
@@ -51,7 +53,7 @@ body  {
     background-color: white; /* Green */
     border: 2px solid rgb(19, 80, 194);
     font-weight: bold;
-    color: black; 
+    color: black;
     padding: 16px 32px;
     text-align: center;
     text-decoration: none;
@@ -70,18 +72,16 @@ body  {
     background-color: rgb(19, 80, 194);
     color: white;
 }
-#time::after { 
+#time::after {
     content: " seconds";
 }
 
-#time::before { 
+#time::before {
     content: "Time passed: ";
 }
 
 
 #fullscreen {
     float:right;
-    
+
   }
-  
-  

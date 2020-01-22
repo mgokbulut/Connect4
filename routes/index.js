@@ -26,7 +26,7 @@ router.get('/splash', function(req, res) {
   }
 
   res.render('splash', {message:message});
-  
+
 });
 
 var loby = [];
